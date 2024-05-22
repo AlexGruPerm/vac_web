@@ -25,15 +25,15 @@ object Report1 {
   private val updateCacheEntityAfterRowCount: Int = 1000
 
   private val reportDictionaries: List[SimpleDictMeta] = List(
-    SimpleDictMeta("errlstxt","Ïîèñê ïî îøèáêàì ËÑ",MultiSelect,Some(-1),
+    SimpleDictMeta("errlstxt","ÐŸÐ¾Ð¸ÑÐº Ð¿Ð¾ Ð¾ÑˆÐ¸Ð±ÐºÐ°Ð¼ Ð›Ð¡",MultiSelect,Some(-1),
       "SELECT row_number() over()::Int8 as id,name FROM data.popup_errls"),
-    SimpleDictMeta("orgs",  "Îðãàíèçàöèè"  ,MultiSelect,None,      "select * from data.filter_org"),
-    SimpleDictMeta("omsu",  "ÎÌÑÓ"         ,MultiSelect,Some(1870),"select * from data.filter_omsu"),
-    SimpleDictMeta("extpd", "Íàëè÷èå ÏÄ"   ,SingleSelect,Some(-1), "select * from data.filter_exist_pd"),
-    SimpleDictMeta("errls", "Îøèáêè â ËÑ"  ,SingleSelect,Some(-1), "select * from data.filter_errls"),
-    SimpleDictMeta("period","Ïåðèîä"       ,SingleSelect,None,
+    SimpleDictMeta("orgs",  "ÐžÑ€Ð³Ð°Ð½Ð¸Ð·Ð°Ñ†Ð¸Ð¸"  ,MultiSelect,None,      "select * from data.filter_org"),
+    SimpleDictMeta("omsu",  "ÐžÐœÐ¡Ð£"         ,MultiSelect,Some(1870),"select * from data.filter_omsu"),
+    SimpleDictMeta("extpd", "ÐÐ°Ð»Ð¸Ñ‡Ð¸Ðµ ÐŸÐ”"   ,SingleSelect,Some(-1), "select * from data.filter_exist_pd"),
+    SimpleDictMeta("errls", "ÐžÑˆÐ¸Ð±ÐºÐ¸ Ð² Ð›Ð¡"  ,SingleSelect,Some(-1), "select * from data.filter_errls"),
+    SimpleDictMeta("period","ÐŸÐµÑ€Ð¸Ð¾Ð´"       ,SingleSelect,None,
       "select p.id,concat(p.name,'.',(-1*p.parent_id)::String) as name from data.filter_period p where selectable=true"),
-    SimpleDictMeta("errpd", "Îøèáêà ÏÄ"   ,SingleSelect,Some(-1),  "select * from data.filter_errpd")
+    SimpleDictMeta("errpd", "ÐžÑˆÐ¸Ð±ÐºÐ° ÐŸÐ”"   ,SingleSelect,Some(-1),  "select * from data.filter_errpd")
   )
 
   val convertF: ResultSet => SimpleDictRow = rs => SimpleDictRow(
@@ -159,7 +159,7 @@ object Report1 {
 
   private def makeWorkbookGetHeader(workbook: XSSFWorkbook, header: List[ReportHeaderRow]) :ZIO[Any,Throwable,XSSFSheet] = for {
     h <- ZIO.attemptBlockingInterrupt{
-      val sheet = workbook.createSheet("ËñÏä")
+      val sheet = workbook.createSheet("Ð›ÑÐŸÐ´")
       val headerStyle = workbook.createCellStyle()
       val headerRow = sheet.createRow(0)
       header.foldLeft(0){

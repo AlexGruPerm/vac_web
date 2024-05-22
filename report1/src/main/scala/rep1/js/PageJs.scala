@@ -517,10 +517,10 @@ object PageJs {
       |
       |                     var svod = document.getElementById("svod");
       |                     svod.innerHTML   = " ";
-      |                     svod.innerHTML   = `<div>Общее число записей : ${hiTotal} </div>`;
-      |                     svod.innerHTML  += `<div>Отсутствует ПД      : ${hicntNoPd} </div>`;
-      |                     svod.innerHTML  += `<div>Кол-во. ошибок ПД   : ${cntPdError} </div>`;
-      |                     svod.innerHTML  += `<div>Кол-во. ошибок ЛС   : ${cntAccError} </div>`;
+      |                     svod.innerHTML   = `<div>РћР±С‰РµРµ С‡РёСЃР»Рѕ Р·Р°РїРёСЃРµР№ : ${hiTotal} </div>`;
+      |                     svod.innerHTML  += `<div>РћС‚СЃСѓС‚СЃС‚РІСѓРµС‚ РџР”      : ${hicntNoPd} </div>`;
+      |                     svod.innerHTML  += `<div>РљРѕР»-РІРѕ. РѕС€РёР±РѕРє РџР”   : ${cntPdError} </div>`;
+      |                     svod.innerHTML  += `<div>РљРѕР»-РІРѕ. РѕС€РёР±РѕРє Р›РЎ   : ${cntAccError} </div>`;
       |
       |
       |                     for (var i = 0; i < response_json.header.length; i++) {

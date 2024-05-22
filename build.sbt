@@ -131,7 +131,7 @@ lazy val dependencies =
 
   lazy val compilerOptions = Seq(
     "-deprecation",
-    "-encoding",
+    "-encoding","UTF-8",
     "-explaintypes",
     "-feature",
     "-unchecked",
