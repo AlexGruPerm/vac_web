@@ -2,6 +2,14 @@ package rep1.js
 
 object PageJs {
 
+  val pushButtonReport1: String =
+    """
+      | window.onload = function() {
+      |    console.log('window.onload Event');
+      |    document.getElementById("btn_show_report1").click();
+      |};
+      |""".stripMargin
+
   val js: String =
     """
       |<script>
@@ -15,6 +23,8 @@ object PageJs {
       |        var isExportExecuting = 0;
       |        var intervalPb;
       |        var reportJsonParams;
+      |
+      |        progReport1ButtonPush
       |
       |        function myStopFunction() {
       |          console.log("STOP checking progress..............");
@@ -393,7 +403,7 @@ object PageJs {
       |                                           p_export_percent.innerText  = "100 %";
       |                                           p_export_pb.innerText  = "||||||||||";
       |                                           if (exp_status == "Success") {
-      |                                            a_export_link.href   = 'http://localhost:8081/export/'+exportLinkHref;
+      |                                            a_export_link.href   = '/export/'+exportLinkHref;
       |                                            a_export_link.hidden = false;
       |                                            p_for_link.hidden = true;
       |                                            myStopFunction();

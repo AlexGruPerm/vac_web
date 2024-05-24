@@ -1,7 +1,7 @@
 name := "vac_web"
 
 ThisBuild / organization := "yakushev"
-ThisBuild / version      := "0.0.1"
+ThisBuild / version      := "0.0.2"
 ThisBuild / scalaVersion := "2.13.10"
 maintainer := "ugr@bk.ru"
 
@@ -25,7 +25,8 @@ val Versions = new {
   .in(file("."))
     .enablePlugins(
       JavaAppPackaging,
-      UniversalPlugin
+      UniversalPlugin,
+      LauncherJarPlugin
     )
     .settings(
       Compile / mainClass := Some("webui.application.MainApp"),
@@ -73,12 +74,12 @@ val Versions = new {
   lazy val webui = (project in file("webui"))
     .enablePlugins(
       JavaAppPackaging,
-      UniversalPlugin
+      UniversalPlugin,
+      LauncherJarPlugin
     )
     .settings(
       name := "webui",
       maintainer := "YakushevAN <ugr@bk.ru>",
-      //Compile / mainClass := Some("vac_web.webui.application.MainApp"),
       Universal / mappings += {
         val jar = (Compile / packageBin).value
         jar -> ("lib/" + jar.getName)
@@ -101,7 +102,6 @@ lazy val dependencies =
     val zio_conf_typesafe = "dev.zio" %% "zio-config-typesafe" % Versions.zio_config
     val zio_conf_magnolia = "dev.zio" %% "zio-config-magnolia" % Versions.zio_config
     val zio_http          = "dev.zio" %% "zio-http" % Versions.zio_http
-    //val zio_json          = "dev.zio" %% "zio-json" % Versions.zio_json
     val dbcp2             = "org.apache.commons" % "commons-dbcp2" % Versions.apacheDbcp2
     val poi               = "org.apache.poi" % "poi" % Versions.poi
     val poi_ooxml         = "org.apache.poi" % "poi-ooxml" % Versions.poi
@@ -131,7 +131,7 @@ lazy val dependencies =
 
   lazy val compilerOptions = Seq(
     "-deprecation",
-    "-encoding","UTF-8",
+    //"-encoding","UTF-8",
     "-explaintypes",
     "-feature",
     "-unchecked",

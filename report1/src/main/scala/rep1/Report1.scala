@@ -25,15 +25,15 @@ object Report1 {
   private val updateCacheEntityAfterRowCount: Int = 1000
 
   private val reportDictionaries: List[SimpleDictMeta] = List(
-    SimpleDictMeta("errlstxt","Поиск по ошибкам ЛС",MultiSelect,Some(-1),
+    SimpleDictMeta("errlstxt","Поиск по ошибкам ЛС",MultiSelect,Some(List(-1)),
       "SELECT row_number() over()::Int8 as id,name FROM data.popup_errls"),
     SimpleDictMeta("orgs",  "Организации"  ,MultiSelect,None,      "select * from data.filter_org"),
-    SimpleDictMeta("omsu",  "ОМСУ"         ,MultiSelect,Some(1870),"select * from data.filter_omsu"),
-    SimpleDictMeta("extpd", "Наличие ПД"   ,SingleSelect,Some(-1), "select * from data.filter_exist_pd"),
-    SimpleDictMeta("errls", "Ошибки в ЛС"  ,SingleSelect,Some(-1), "select * from data.filter_errls"),
+    SimpleDictMeta("omsu",  "ОМСУ"         ,MultiSelect,Some(List(1870)),"select * from data.filter_omsu"),
+    SimpleDictMeta("extpd", "Наличие ПД"   ,SingleSelect,Some(List(-1)), "select * from data.filter_exist_pd"),
+    SimpleDictMeta("errls", "Ошибки в ЛС"  ,SingleSelect,Some(List(-1)), "select * from data.filter_errls"),
     SimpleDictMeta("period","Период"       ,SingleSelect,None,
       "select p.id,concat(p.name,'.',(-1*p.parent_id)::String) as name from data.filter_period p where selectable=true"),
-    SimpleDictMeta("errpd", "Ошибка ПД"   ,SingleSelect,Some(-1),  "select * from data.filter_errpd")
+    SimpleDictMeta("errpd", "Ошибка ПД"   ,SingleSelect,Some(List(-1)),  "select * from data.filter_errpd")
   )
 
   val convertF: ResultSet => SimpleDictRow = rs => SimpleDictRow(
@@ -41,10 +41,10 @@ object Report1 {
     rs.getString("name")
   )
 
-  def isDefaultSelected(defSelectedId: Option[Int], currId: Int): String =
+  def isDefaultSelected(defSelectedId: Option[List[Int]], currId: Int): String =
     defSelectedId match {
       case Some(defSelId) =>
-        if (defSelId == currId)
+        if (defSelId.contains(currId))
           " selected "
         else
           " "
@@ -65,8 +65,8 @@ object Report1 {
        |  name="sel_${d.dictMeta.dictCode}" id="${d.dictMeta.dictCode}-select" width="240px">
        |  ${d.rows.map{r =>
              s"<option value=\"${r.id}\" " +
-               s"${isDefaultSelected(d.dictMeta.defSelectedId,r.id)}  " +
-               s"${ if (d.dictMeta.dictCode=="period") selectSingleMaxPeriod(r.id,d.rows.map(_.id).max) else " "}>${r.name}</option>"
+               s"${isDefaultSelected(d.dictMeta.defSelectedId,r.id)}  >${r.name}</option>" //+
+               //s"${ if (d.dictMeta.dictCode=="period") selectSingleMaxPeriod(r.id,d.rows.map(_.id).max) else " "}>${r.name}</option>"
             }.mkString}
        | </select>
        |</div>
@@ -76,7 +76,13 @@ object Report1 {
     chService <- ZIO.service[ClickhouseService]
     appConfig <- ZIO.service[AppConfig]
     //List of effects to retrieve data for dictionaries from db.
-    dictsEffects = reportDictionaries.map(d =>
+    dictsEffects = reportDictionaries.map{dict =>
+       if (dict.dictCode=="period")
+         dict.copy(defSelectedId = Some(List(24292)))
+       else
+         dict
+      }
+      .map(d =>
       chService.getSimpleDict(
       dictMeta = d,
       f = convertF
@@ -84,6 +90,38 @@ object Report1 {
     dicts <- ZIO.collectAllPar(dictsEffects).withParallelism(appConfig.nThreads)
     allDictsCombo <- ZIO.foreach(dicts){d => ZIO.succeed(dictToHtmlCombo(d))}
     mainPageContent <- ZIO.succeed(PageHtml.pageHtml(allDictsCombo.mkString))
+    response <- ZIO.succeed(Response(Status.Ok,Headers("Content-Type", "text/html"),Body.fromString(mainPageContent)))
+  } yield response
+
+
+  def newEmptyMainPageRun(reqParams: ReqReport1): ZIO[AppConfig with ClickhouseService, Throwable, Response] = for {
+    chService <- ZIO.service[ClickhouseService]
+    appConfig <- ZIO.service[AppConfig]
+
+    //List of effects to retrieve data for dictionaries from db.
+    dictsEffects = reportDictionaries
+      .map { dict =>
+        if (dict.dictCode == "omsu")
+          dict.copy(defSelectedId = Some(reqParams.omsu))
+        else if (dict.dictCode == "period")
+          dict.copy(defSelectedId = Some(List(reqParams.period)))
+        else if (dict.dictCode == "orgs")
+          dict.copy(defSelectedId = Some(reqParams.org))
+        else if (dict.dictCode == "errls")
+          dict.copy(defSelectedId = Some(List(reqParams.errls)))
+        else if (dict.dictCode == "extpd")
+          dict.copy(defSelectedId = Some(List(reqParams.existpd)))
+        else
+          dict
+      }.map(d => chService.getSimpleDict(
+        dictMeta = d,
+        f = convertF
+      ))
+
+    dicts <- ZIO.collectAllPar(dictsEffects).withParallelism(appConfig.nThreads)
+    allDictsCombo <- ZIO.foreach(dicts){d =>
+      ZIO.succeed(dictToHtmlCombo(d))}
+    mainPageContent <- ZIO.succeed(PageHtml.pageHtml(allDictsCombo.mkString,Some(true)))
     response <- ZIO.succeed(Response(Status.Ok,Headers("Content-Type", "text/html"),Body.fromString(mainPageContent)))
   } yield response
 
