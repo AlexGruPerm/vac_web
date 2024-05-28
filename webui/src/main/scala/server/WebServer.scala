@@ -5,6 +5,7 @@ import comm.BadReq.ZioResponseMsgBadRequest
 import comm.{AppConfig, ReqReport1, ResponseMessage}
 import excel.{ExportExcelCache, ImplExportExcelCache}
 import rep1.Report1
+import rep2.Report2
 import zio.{ZIO, ZLayer, durationInt}
 import zio.http.netty.NettyConfig
 import zio.http.template.{a, href, li, ul}
@@ -33,18 +34,22 @@ object WebServer {
       Routes(
         Method.GET / "report" / int("id")  ->
           handler { (id: Int, req: Request) =>
-            if (req.url.queryParams.isEmpty)
-              ZIO.logInfo(s"report_id = $id URL[${req.method.name}] - ${req.url.path.toString()}") *>
-                catchCover(Report1.newEmptyMainPage())
-            else{
-
-              ZIO.logInfo(s"report_id = $id URL[${req.method.name}] - ${req.url.path.toString()}") *>
+            ZIO.logInfo(s"report_id = $id URL[${req.method.name}] - ${req.url.path.toString()}") *>
+              (if (req.url.queryParams.isEmpty){
+                (id match {
+                  case 1 => catchCover(Report1.newEmptyMainPage())
+                  case _ => ZioResponseMsgBadRequest("Report id not found.")
+                })
+          } else{
                 ZIO.logInfo(s" query params ${req.url} ") *>
                 ZIO.logInfo(s" PARSED: period = ${req.url.queryParams.getAll("period").head.toInt}") *>
                 ZIO.logInfo(s" PARSED: errls  = ${req.url.queryParams.getAll("errls").head.toInt}") *>
                 ZIO.logInfo(s" PARSED: existpd  = ${req.url.queryParams.getAll("existpd").head.toInt}") *>
                 ZIO.logInfo(s" PARSED: omsu(s) = ${req.url.queryParams.getAll("omsu").toList.map(_.toInt)}") *>
                 ZIO.logInfo(s" PARSED: org(s)  = ${req.url.queryParams.getAll("org").toList.map(_.toInt)}") *>
+                ZIO.logInfo(s" PARSED: page_num  = ${req.url.queryParams.getAll("page_num").toList.map(_.toInt)}") *>
+                  ZIO.logInfo(s" PARSED: page_cnt  = ${req.url.queryParams.getAll("page_cnt").toList.map(_.toInt)}") *>
+                ZIO.logInfo(s" PARSED: errlstxt  = ${req.url.queryParams.getAll("errlstxt").toList}") *>
                 catchCover(
                   Report1.newEmptyMainPageRun(
                     ReqReport1(
@@ -53,11 +58,13 @@ object WebServer {
                       org = req.url.queryParams.getAll("org").toList.map(_.toInt),
                       errls   = req.url.queryParams.getAll("errls").head.toInt,
                       existpd = req.url.queryParams.getAll("existpd").head.toInt,
-                      page_num = 1,
-                      page_cnt = 100)
+                      page_num = req.url.queryParams.getAll("page_num").head.toInt,
+                      page_cnt = req.url.queryParams.getAll("page_cnt").head.toInt,
+                      errlstxt = req.url.queryParams.getAll("errlstxt").toList
+                    )
                   )
                 )
-             }
+             })
           },
 /*        Method.GET / "report" / int("id") ->
           handler { (id: Int, req: Request) =>
@@ -67,7 +74,11 @@ object WebServer {
         Method.POST / "report" / int("id") / "show" ->
           handler { (id: Int, req: Request) =>
             ZIO.logInfo(s"report_id = $id URL[${req.method.name}] - ${req.url.path.toString()}") *>
-              catchCover(Report1.getReport(req))
+              (id match {
+                  case 1 => catchCover(Report1.getReport(req))
+                  case 2 => catchCover(Report2.getReport(req))
+                  case _ => ZioResponseMsgBadRequest("Report id not found.")
+                })
           },
         Method.POST / "report" / int("id") / "export" ->
           handler { (id: Int, req: Request) =>

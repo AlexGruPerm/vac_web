@@ -23,6 +23,36 @@ object PageJs {
       |        var isExportExecuting = 0;
       |        var intervalPb;
       |        var reportJsonParams;
+      |        var omsu_id   = 0;
+      |
+      |        var period_id = 0;
+      |
+      |        var r2_omsu_name;
+      |        var r2_org_name;
+      |        var r2_year;
+      |        var r2_pd_total;
+      |        var r2_pd_error;
+      |        var r2_pd_prcnt_error;
+      |
+      |        var tdValColor = "";
+      |
+      |        var cWhite      = "#FFFFFF";
+      |        var cGreen      = "#2ECC71";
+      |        var cLightGreen = "#ABEBC6";
+      |        var cLightRed   = "#F5B7B1";
+      |        var cRed        = "#E74C3C";
+      |
+      | window.onload = function() {
+      |    console.log('window.onload Event');
+      |
+      |    r2_omsu_name      = document.getElementById("r2_omsu_name");
+      |    r2_org_name       = document.getElementById("r2_org_name");
+      |    r2_year           = document.getElementById("r2_year");
+      |    r2_pd_total       = document.getElementById("r2_pd_total");
+      |    r2_pd_error       = document.getElementById("r2_pd_error");
+      |    r2_pd_prcnt_error = document.getElementById("r2_pd_prcnt_error");
+      |
+      |};
       |
       |        progReport1ButtonPush
       |
@@ -658,6 +688,243 @@ object PageJs {
       |
       |          console.log('-- startJsonShowReportHtml res =',resultJson);
       |        }
+      |
+      |function tdCellClick(tdCell){
+      |  console.log("click cell.id = ",tdCell.id);
+      |  var elms = tdCell.id.split('_');
+      |  var period = parseInt(elms[0])*12 + parseInt(elms[3]) - 1;
+      |  const thisLsErrorText = tdCell.dataset.lserrortext;
+      |  console.log("click thisLsErrorText = ",thisLsErrorText);
+      |
+      |  var selectedErrls = [];
+      |   var errlsOptions = document.getElementById("errls-select").options;
+      |          for (var i = 0; i < errlsOptions.length; i++) {
+      |                  if (errlsOptions[i].selected)
+      |                      selectedErrls.push(errlsOptions[i].value);
+      |              };
+      |
+      |  window.open('/report/1?period=' + period + '&omsu='+ elms[1] +'&org='+ elms[2] +'&errls='+ selectedErrls[0] +'&existpd=1&page_num=1&page_cnt=100'+'&errlstxt='+thisLsErrorText);
+      |}
+      |
+      |function selCell(cell) {
+      |  const cellValue = cell.dataset.intervalue;
+      |  const parts  = cell.id.split('_');
+      |  const values = cellValue.split('-');
+      |
+      |  var selNyear = parts[0];
+      |  var selOmsu  = parts[1];
+      |  var selOrg   = parts[2];
+      |  var selMonth = parts[3];
+      |
+      |  var v_pd_err_prcnt = values[0];
+      |  var v_pd_total     = values[1];
+      |  var v_pd_errors    = values[2];
+      |
+      |    r2_omsu_name.innerText      =  selOmsu;
+      |    r2_org_name.innerText       =  selOrg
+      |    r2_year.innerText           =  selNyear + " год., id = " + (parseInt(selNyear)*12 + parseInt(selMonth) - 1);
+      |    r2_pd_total.innerText       = v_pd_total;
+      |    r2_pd_error.innerText       = v_pd_errors;
+      |    r2_pd_prcnt_error.innerText = v_pd_err_prcnt;
+      |
+      |}
+      |
+      |
+      | function unselCell(cell) {
+      |    r2_omsu_name.innerText      = "";
+      |    r2_org_name.innerText       = "";
+      |    r2_year.innerText           = "";
+      |    r2_pd_total.innerText       = "";
+      |    r2_pd_error.innerText       = "";
+      |    r2_pd_prcnt_error.innerText = "";
+      | }
+      |
+      |async function btnShowReport2(){
+      |          console.log('-- btnShowReport2 -------------------- ');
+      |          var jsonParamsStr;
+      |
+      |          var selectedOrgsId      = [];
+      |          var selectedErrlsTxt    = [];
+      |          var selectedErrlsTxtCnt = 0;
+      |          var selectedOmsuId = [];
+      |          var selectedExtpd = [];
+      |          var selectedErrls  = [];
+      |          var selectedYear = [];
+      |
+      |          var orgOptions = document.getElementById("orgs-select").options;
+      |          for (var i = 0; i < orgOptions.length; i++) {
+      |                  if (orgOptions[i].selected)
+      |                      selectedOrgsId.push(orgOptions[i].value);
+      |              };
+      |
+      |          var errlstxtOptions = document.getElementById("errlstxt-select").options;
+      |
+      |          for (var i = 0; i < errlstxtOptions.length; i++) {
+      |                  if (errlstxtOptions[i].selected){
+      |                  selectedErrlsTxtCnt = selectedErrlsTxtCnt + 1;
+      |                  }
+      |          }
+      |
+      |          console.log("selectedErrlsTxtCnt=",selectedErrlsTxtCnt);
+      |
+      |          if (selectedErrlsTxtCnt > 0) {
+      |             for (var i = 0; i < errlstxtOptions.length; i++) {
+      |                  if (errlstxtOptions[i].selected){
+      |                       selectedErrlsTxt.push('"' + errlstxtOptions[i].text.replaceAll('"',"\\\"") + '"');
+      |                      }
+      |              }
+      |          }
+      |
+      |          console.log("selectedErrlsTxt=",selectedErrlsTxt);
+      |
+      |          var omsuOptions = document.getElementById("omsu-select").options;
+      |          for (var i = 0; i < omsuOptions.length; i++) {
+      |                  if (omsuOptions[i].selected)
+      |                      selectedOmsuId.push(omsuOptions[i].value);
+      |              };
+      |
+      |          var extpdOptions = document.getElementById("extpd-select").options;
+      |          for (var i = 0; i < extpdOptions.length; i++) {
+      |                  if (extpdOptions[i].selected)
+      |                      selectedExtpd.push(extpdOptions[i].value);
+      |              };
+      |
+      |
+      |          var errlsOptions = document.getElementById("errls-select").options;
+      |          for (var i = 0; i < errlsOptions.length; i++) {
+      |                  if (errlsOptions[i].selected)
+      |                      selectedErrls.push(errlsOptions[i].value);
+      |              };
+      |
+      |          var periodOptions = document.getElementById("nyear-select").options;
+      |          for (var i = 0; i < periodOptions.length; i++) {
+      |                  if (periodOptions[i].selected)
+      |                      selectedYear.push(periodOptions[i].value);
+      |              };
+      |
+      |           var pageRowsCnt = document.getElementById("pagerowscnt");
+      |           var pageNum     = document.getElementById("pagenum");
+      |           //console.log("pageRowsCnt=",pageRowsCnt.value);
+      |
+      |          jsonParamsStr = "{\"org\" : ["  + selectedOrgsId +
+      |                      "], \"omsu\" : ["   + selectedOmsuId +
+      |                      "], \"errlstxt\" : ["   + selectedErrlsTxt +
+      |                      "], \"existpd\" : "  + selectedExtpd  +
+      |                      " , \"errls\" : "    + selectedErrls  +
+      |                      " , \"nyear\" : "   + selectedYear  +
+      |                      " , \"page_num\" : " + pageNum.value +
+      |                      " , \"page_cnt\" : " + pageRowsCnt.value + "}";
+      |
+      |          reportJsonParams = JSON.parse(JSON.stringify(jsonParamsStr));
+      |          console.log("JSON for AJAX",reportJsonParams);
+      |
+      |          var resultJson;
+      |          resultJson = await startJsonShowReportJson2();
+      |
+      |          console.log('-- startJsonShowReport2Html res =',resultJson);
+      |        }
+      |
+      |        function getCellColor(cellValueStr){
+      |        if (cellValueStr == "0-0-0") {
+      |         return cWhite;
+      |        }
+      |        var pte = cellValueStr.split('-');
+      |        var cellValue = parseInt(pte[0]);
+      |          if (cellValue > 75)
+      |            return cRed;
+      |          else if (cellValue > 50)
+      |            return cLightRed;
+      |          else if (cellValue > 25)
+      |            return cLightGreen
+      |          else
+      |            return cGreen;
+      |        }
+      |
+      | async function startJsonShowReportJson2() {
+      |             console.log('Start ajax function.');
+      |             console.log('-- request ----------------------------------------------');
+      |             console.log(reportJsonParams);
+      |             console.log('---------------------------------------------------------');
+      |
+      |               var report_table = document.getElementById("report_table");
+      |               report_table.innerHTML = "";
+      |
+      |               const response = await fetch(`2/show`, {
+      |                    method: "POST",
+      |                    headers: {
+      |                     'Accept': 'application/json',
+      |                     'Content-Type': 'application/json'
+      |                    },
+      |                    body: reportJsonParams
+      |                  });
+      |
+      |               report_table.innerHTML = `<thead><tr id="rep_table_header"></tr></thead>`;
+      |
+      |               const report_table_header = document.getElementById("rep_table_header");
+      |
+      |               responseStatus = response.status;
+      |                   if (responseStatus == 400) {
+      |                     console.log('Response status = ',responseStatus);
+      |                     responseText = await response.text();
+      |                     console.log('Response text = ',responseText);
+      |                     report_container.innerHTML = `ERROR:<br/> ${responseText}`;
+      |                     console.log('---------------------------------------------------------');
+      |                     return response;
+      |                   } else {
+      |                     responseText = await response.text();
+      |                     const response_json = JSON.parse(responseText);
+
+      |                     for (var i = 0; i < response_json.header.length; i++) {
+      |                         let hdr = response_json.header[i];
+      |                         report_table_header.innerHTML += `<td>` + hdr.name + `</td>`;
+      |                     }
+      |
+      |                     var innerTable = '';
+      |                     for (var i = 0; i < response_json.data.length; i++) {
+      |                     innerTable += "<tr>"
+      |                         let r = response_json.data[i];
+      |
+      |                         var tdCellId = r.nyear + "_" + r.id_omsu + "_" + r.id_voc_agent;
+      |                         console.log("tdCellId = ",tdCellId," r_ls_error = ",r.ls_error);
+
+      |                         innerTable += "<td>" +  r.rn + "</td>"
+      |                         innerTable += "<td>" +  r.omsu_name + "</td>"
+      |                         innerTable += "<td>" +  r.org_name + "</td>"
+      |                         innerTable += "<td>" +  r.ls_error + "</td>"
+      |
+      |                         /*
+      |                         var lse0 = r.ls_error.replaceAll('"',"\\\"");
+      |                         console.log("lse0=",lse0);
+      |                         var lse = lse0.replaceAll('/',"%2F");
+      |                         console.log("lse=",lse);
+      |                         */
+      |                         //var lse = r.ls_error.replaceAll('"',"\\\"");
+      |                         var lse = r.ls_error.replaceAll('"',"&quot;");
+      |                         console.log(" lse = ",lse);
+      |
+      |
+      |innerTable += '<td id= "' + tdCellId + "_" + 1  +'"  bgcolor='+ getCellColor(r.r_1_koef_totcnt_errcnt)  +' onmouseover="selCell(this)" onmouseout="unselCell(this)" onclick="tdCellClick(this)" data-intervalue=' + r.r_1_koef_totcnt_errcnt  + ' data-lserrortext="'+ lse +'"></td>'
+      |innerTable += '<td id= "' + tdCellId + "_" + 2  +'"  bgcolor='+ getCellColor(r.r_2_koef_totcnt_errcnt)  +' onmouseover="selCell(this)" onmouseout="unselCell(this)" onclick="tdCellClick(this)" data-intervalue=' + r.r_2_koef_totcnt_errcnt  + ' data-lserrortext="'+ lse +'"></td>'
+      |innerTable += '<td id= "' + tdCellId + "_" + 3  +'"  bgcolor='+ getCellColor(r.r_3_koef_totcnt_errcnt)  +' onmouseover="selCell(this)" onmouseout="unselCell(this)" onclick="tdCellClick(this)" data-intervalue=' + r.r_3_koef_totcnt_errcnt  + ' data-lserrortext="'+ lse +'"></td>'
+      |innerTable += '<td id= "' + tdCellId + "_" + 4  +'"  bgcolor='+ getCellColor(r.r_4_koef_totcnt_errcnt)  +' onmouseover="selCell(this)" onmouseout="unselCell(this)" onclick="tdCellClick(this)" data-intervalue=' + r.r_4_koef_totcnt_errcnt  + ' data-lserrortext="'+ lse +'"></td>'
+      |innerTable += '<td id= "' + tdCellId + "_" + 5  +'"  bgcolor='+ getCellColor(r.r_5_koef_totcnt_errcnt)  +' onmouseover="selCell(this)" onmouseout="unselCell(this)" onclick="tdCellClick(this)" data-intervalue=' + r.r_5_koef_totcnt_errcnt  + ' data-lserrortext="'+ lse +'"></td>'
+      |innerTable += '<td id= "' + tdCellId + "_" + 6  +'"  bgcolor='+ getCellColor(r.r_6_koef_totcnt_errcnt)  +' onmouseover="selCell(this)" onmouseout="unselCell(this)" onclick="tdCellClick(this)" data-intervalue=' + r.r_6_koef_totcnt_errcnt  + ' data-lserrortext="'+ lse +'"></td>'
+      |innerTable += '<td id= "' + tdCellId + "_" + 7  +'"  bgcolor='+ getCellColor(r.r_7_koef_totcnt_errcnt)  +' onmouseover="selCell(this)" onmouseout="unselCell(this)" onclick="tdCellClick(this)" data-intervalue=' + r.r_7_koef_totcnt_errcnt  + ' data-lserrortext="'+ lse +'"></td>'
+      |innerTable += '<td id= "' + tdCellId + "_" + 8  +'"  bgcolor='+ getCellColor(r.r_8_koef_totcnt_errcnt)  +' onmouseover="selCell(this)" onmouseout="unselCell(this)" onclick="tdCellClick(this)" data-intervalue=' + r.r_8_koef_totcnt_errcnt  + ' data-lserrortext="'+ lse +'"></td>'
+      |innerTable += '<td id= "' + tdCellId + "_" + 9  +'"  bgcolor='+ getCellColor(r.r_9_koef_totcnt_errcnt)  +' onmouseover="selCell(this)" onmouseout="unselCell(this)" onclick="tdCellClick(this)" data-intervalue=' + r.r_9_koef_totcnt_errcnt  + ' data-lserrortext="'+ lse +'"></td>'
+      |innerTable += '<td id= "' + tdCellId + "_" + 10 +'"  bgcolor='+ getCellColor(r.r_10_koef_totcnt_errcnt) +' onmouseover="selCell(this)" onmouseout="unselCell(this)" onclick="tdCellClick(this)" data-intervalue=' + r.r_10_koef_totcnt_errcnt + ' data-lserrortext="'+ lse +'"></td>'
+      |innerTable += '<td id= "' + tdCellId + "_" + 11 +'"  bgcolor='+ getCellColor(r.r_11_koef_totcnt_errcnt) +' onmouseover="selCell(this)" onmouseout="unselCell(this)" onclick="tdCellClick(this)" data-intervalue=' + r.r_11_koef_totcnt_errcnt + ' data-lserrortext="'+ lse +'"></td>'
+      |innerTable += '<td id= "' + tdCellId + "_" + 12 +'"  bgcolor='+ getCellColor(r.r_12_koef_totcnt_errcnt) +' onmouseover="selCell(this)" onmouseout="unselCell(this)" onclick="tdCellClick(this)" data-intervalue=' + r.r_12_koef_totcnt_errcnt + ' data-lserrortext="'+ lse +'"></td>'
+      |
+      |                         innerTable += "<td>" +  r.total + "</td>"
+      |
+      |                     innerTable += "</tr>"
+      |                     }
+      |                     report_table.innerHTML += innerTable;
+      |                     return response;
+      |                   }
+      |        }
+      |
       |    </script>
       |""".replace("\r", "").stripMargin
 

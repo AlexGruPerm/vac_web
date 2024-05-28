@@ -8,6 +8,7 @@ import excel.EncDecReport1JsonTemplate.encoderExportSuccessStarted
 import excel.{ExportExcelCache, ExportProgress, ExportSuccessStarted, SingleExcelExportEntity, Success, Wait}
 import org.apache.poi.xssf.usermodel.{XSSFSheet, XSSFWorkbook}
 import rep1.html.PageHtml
+import rep_common.ReqEntity.requestToEntity
 import zio.http.template.div
 import zio.http.{Body, Handler, Headers, Path, Request, Response, Status}
 import zio.json.{DecoderOps, EncoderOps, JsonDecoder}
@@ -25,14 +26,16 @@ object Report1 {
   private val updateCacheEntityAfterRowCount: Int = 1000
 
   private val reportDictionaries: List[SimpleDictMeta] = List(
-    SimpleDictMeta("errlstxt","Поиск по ошибкам ЛС",MultiSelect,Some(List(-1)),
+    SimpleDictMeta("errlstxt","Поиск по ошибкам ЛС",MultiSelect,None,
       "SELECT row_number() over()::Int8 as id,name FROM data.popup_errls"),
-    SimpleDictMeta("orgs",  "Организации"  ,MultiSelect,None,      "select * from data.filter_org"),
-    SimpleDictMeta("omsu",  "ОМСУ"         ,MultiSelect,Some(List(1870)),"select * from data.filter_omsu"),
-    SimpleDictMeta("extpd", "Наличие ПД"   ,SingleSelect,Some(List(-1)), "select * from data.filter_exist_pd"),
-    SimpleDictMeta("errls", "Ошибки в ЛС"  ,SingleSelect,Some(List(-1)), "select * from data.filter_errls"),
-    SimpleDictMeta("period","Период"       ,SingleSelect,None,
+    SimpleDictMeta("orgs",  "Организации"  ,MultiSelect,Some(List(11075)),      "select * from data.filter_org"),
+    SimpleDictMeta("omsu",  "ОМСУ"         ,MultiSelect,Some(List(1169)),"select * from data.filter_omsu"),
+    SimpleDictMeta("extpd", "Наличие ПД"   ,SingleSelect,Some(List(1)), "select * from data.filter_exist_pd"),
+    SimpleDictMeta("errls", "Ошибки в ЛС"  ,SingleSelect,Some(List(1)), "select * from data.filter_errls"),
+    SimpleDictMeta("period","Период"       ,SingleSelect,Some(List(24276)),
       "select p.id,concat(p.name,'.',(-1*p.parent_id)::String) as name from data.filter_period p where selectable=true"),
+    SimpleDictMeta("nyear","Год (для отчета 2)"       ,SingleSelect,Some(List(2023)),
+      "select distinct (-1)*parent_id as id, ((-1)*parent_id)::String as name from data.filter_period p where selectable=true order by id desc"),
     SimpleDictMeta("errpd", "Ошибка ПД"   ,SingleSelect,Some(List(-1)),  "select * from data.filter_errpd")
   )
 
@@ -41,14 +44,22 @@ object Report1 {
     rs.getString("name")
   )
 
-  def isDefaultSelected(defSelectedId: Option[List[Int]], currId: Int): String =
+  def isDefaultSelected(defSelectedId: Option[List[Int]], currId: Int, elem: String, defSelElem: Option[String]): String =
     defSelectedId match {
       case Some(defSelId) =>
         if (defSelId.contains(currId))
           " selected "
         else
           " "
-      case None => " "
+      case None =>
+        defSelElem match {
+          case Some(se) =>
+            if (se==elem)
+              " selected "
+            else
+              " "
+          case None =>" "
+        }
     }
 
   def selectSingleMaxPeriod(currPeriodId: Int, maxPeriodId: Int): String =
@@ -65,7 +76,7 @@ object Report1 {
        |  name="sel_${d.dictMeta.dictCode}" id="${d.dictMeta.dictCode}-select" width="240px">
        |  ${d.rows.map{r =>
              s"<option value=\"${r.id}\" " +
-               s"${isDefaultSelected(d.dictMeta.defSelectedId,r.id)}  >${r.name}</option>" //+
+               s"${isDefaultSelected(d.dictMeta.defSelectedId,r.id,r.name,d.dictMeta.defSelElement)}  >${r.name}</option>" //+
                //s"${ if (d.dictMeta.dictCode=="period") selectSingleMaxPeriod(r.id,d.rows.map(_.id).max) else " "}>${r.name}</option>"
             }.mkString}
        | </select>
@@ -111,6 +122,8 @@ object Report1 {
           dict.copy(defSelectedId = Some(List(reqParams.errls)))
         else if (dict.dictCode == "extpd")
           dict.copy(defSelectedId = Some(List(reqParams.existpd)))
+        else if (dict.dictCode == "errlstxt")
+          dict.copy(defSelElement = reqParams.errlstxt.headOption)
         else
           dict
       }.map(d => chService.getSimpleDict(
@@ -282,21 +295,7 @@ object Report1 {
     _ <- ZIO.logInfo(s"export entity cache size = $count thisExport rows = ${expEntity.map(_.rowsExported)}")
   } yield ()
 
-  private def requestToEntity[A](r: Request)(implicit decoder: JsonDecoder[A]): ZIO[Any, Nothing, Either[String, A]] = for {
-    req <- r.body
-      .asString
-      .map(_.fromJson[A])
-      .catchAllDefect { case e: Exception =>
-        ZIO
-          .logError(s"Error[3] parsing input file with : ${e.getMessage}")
-          .as(Left(e.getMessage))
-      }
-      .catchAll { case e: Exception =>
-        ZIO
-          .logError(s"Error[4] parsing input file with : ${e.getMessage}")
-          .as(Left(e.getMessage))
-      }
-  } yield req
+
 
   import EncDecReqReport._
   def getReport(req: Request): ZIO[AppConfig with ClickhouseService, Throwable, Response] = for {

@@ -40,11 +40,12 @@ object PageHtml {
        |            </td>
        |            <td>
                    |  <div id="selected_cell">
-                   |    <span id="for_omsu_name">Наименование ОМСУ: </span><span id="omsu_name">***</span></br>
-                   |    <span id="for_period">Период: </span><span id="period">***</span></br>
-                   |    <span id="for_pd_total">Всего ПД: </span><span id="pd_total">***</span></br>
-                   |    <span id="for_pd_error">ПД с ошибками: </span><span id="pd_error">***</span></br>
-                   |    <span id="for_pd_prcnt_error">% ПД с ошибками: </span><span id="pd_prcnt_error">***</span>
+                   |    <span id="for_omsu_name">Наименование ОМСУ: </span><span id="r2_omsu_name">***</span></br>
+                   |    <span id="for_org_name">Организация: </span><span id="r2_org_name">***</span></br>
+                   |    <span id="for_period">Период: </span><span id="r2_year">***</span></br>
+                   |    <span id="for_pd_total">Всего ПД: </span><span id="r2_pd_total">***</span></br>
+                   |    <span id="for_pd_error">ПД с ошибками: </span><span id="r2_pd_error">***</span></br>
+                   |    <span id="for_pd_prcnt_error">% ПД с ошибками: </span><span id="r2_pd_prcnt_error">***</span>
                    |  </div>
        |            </td>
        |           </tr>

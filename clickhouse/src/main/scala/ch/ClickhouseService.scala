@@ -1,7 +1,7 @@
 package ch
 
 import com.clickhouse.jdbc.ClickHouseDataSource
-import comm.{HeadInfo, Report1Row, ReportHeaderRow, ReqReport1, SimpleDictData, SimpleDictMeta, SimpleDictRow, TimestampConverter}
+import comm.{HeadInfo, Report1Row, Report2HeaderRow, Report2Row, ReportHeaderRow, ReqReport1, ReqReport2, SimpleDictData, SimpleDictMeta, SimpleDictRow, TimestampConverter}
 import zio.{Clock, ZIO, ZLayer, durationInt}
 import comm.TimestampConverter.TsToString
 
@@ -11,7 +11,9 @@ import scala.annotation.nowarn
 
 trait ClickhouseService{
   def getReportHeader(reportId: Int): ZIO[Any,SQLException,List[ReportHeaderRow]]
+  def getReport2Header(reportId: Int): ZIO[Any,SQLException,List[Report2HeaderRow]]
   def getReportData1(reportId: Int, reqParams: ReqReport1, isCacheExists: Int, cacheKey: Int, isExport: Int = 0): ZIO[Any,SQLException,List[Report1Row]]
+  def getReportData2(reportId: Int, reqParams: ReqReport2): ZIO[Any,SQLException,List[Report2Row]]
   def getSimpleDict(dictMeta: SimpleDictMeta, f: ResultSet => SimpleDictRow): ZIO[Any,SQLException,SimpleDictData]
   def getReport1HeadInfo(reportId: Int, reqParams: ReqReport1,isCacheExists: Int,cacheKey: Int): ZIO[Any,SQLException,HeadInfo]
   def isCacheExistsCh(cacheKey: Int): ZIO[Any, SQLException, Int]
@@ -64,6 +66,29 @@ case class ClickhouseServiceImpl(pool: ClickHouseDataSource) extends ClickhouseS
         r.getInt("order_by")
       )
     }.toList
+  } yield lstHeaderRows
+
+  def getReport2Header(reportId: Int): ZIO[Any,SQLException,List[Report2HeaderRow]] = for {
+    //rs <- getReportHeaderResultSet(reportId)
+    lstHeaderRows <- ZIO.succeed(List(
+      Report2HeaderRow(1,"№","rn"),
+      Report2HeaderRow(1,"ОМСУ","omsu_name"),
+      Report2HeaderRow(1,"Организация","org_name"),
+      Report2HeaderRow(1,"Ошибка ЛС","ls_error"),
+      Report2HeaderRow(1,"Январь","r_1_koef_totcnt_errcnt"),
+      Report2HeaderRow(1,"Февраль","r_2_koef_totcnt_errcnt"),
+      Report2HeaderRow(1,"Март","r_3_koef_totcnt_errcnt"),
+      Report2HeaderRow(1,"Апрель","r_4_koef_totcnt_errcnt"),
+      Report2HeaderRow(1,"Мой","r_5_koef_totcnt_errcnt"),
+      Report2HeaderRow(1,"Июнь","r_6_koef_totcnt_errcnt"),
+      Report2HeaderRow(1,"Июль","r_7_koef_totcnt_errcnt"),
+      Report2HeaderRow(1,"Август","r_8_koef_totcnt_errcnt"),
+      Report2HeaderRow(1,"Сентябрь","r_9_koef_totcnt_errcnt"),
+      Report2HeaderRow(1,"Октябрь","r_10_koef_totcnt_errcnt"),
+      Report2HeaderRow(1,"Ноябрь","r_11_koef_totcnt_errcnt"),
+      Report2HeaderRow(1,"Декабрь","r_12_koef_totcnt_errcnt"),
+      Report2HeaderRow(1,"Всего записей","total")
+    ))
   } yield lstHeaderRows
 
   private def getReportDataResultSet(@nowarn reportId: Int, reqParams: ReqReport1) : ZIO[Any,SQLException,ResultSet] = for {
@@ -150,6 +175,41 @@ case class ClickhouseServiceImpl(pool: ClickHouseDataSource) extends ClickhouseS
         .executeQuery(query)
     }.refineToOrDie[SQLException]
   } yield resultSetData
+
+  /*
+
+
+                           p_exist_pd     = -1,
+                           p_first        = 1,
+                           p_last         = 40
+  */
+  private def getReport2DataResultSetView(@nowarn reportId: Int,
+                                         reqParams: ReqReport2) : ZIO[Any,SQLException,(ResultSet,Option[String])] = for {
+    resultSetDataOptQuery <-
+        ZIO.attemptBlockingInterrupt {
+          val query =
+            s"""
+               |select *
+               |from   data.v_report_2_rec(p_year         = ${reqParams.nyear},
+               |                           p_omsu         = [${reqParams.omsu.mkString(",")}]::Array(Int32),
+               |                           p_orgs         = [${reqParams.org.mkString(",")}]::Array(Int32),
+               |                           p_err_ls       = ${reqParams.errls},
+               |                           p_popup_err_ls = [${reqParams.errlstxt.map(elm => s"'$elm'").mkString(",")}]::Array(String),
+               |                           p_exist_pd     = ${reqParams.existpd},
+               |                           p_first        = ${(reqParams.page_num - 1) * reqParams.page_cnt + 1},
+               |                           p_last         = ${reqParams.page_num * reqParams.page_cnt}
+               |                          )
+               |                      """
+              .stripMargin
+          //todo: DEBUG
+          println(query)
+          val rs = pool.getConnection
+            .createStatement
+            .executeQuery(query)
+          (rs,Some(query))
+        }.refineToOrDie[SQLException]
+  } yield resultSetDataOptQuery
+
 
   private def getReportDataResultSetView(@nowarn reportId: Int,
                                          reqParams: ReqReport1,
@@ -257,6 +317,43 @@ case class ClickhouseServiceImpl(pool: ClickHouseDataSource) extends ClickhouseS
     finish  <- Clock.currentTime(TimeUnit.MILLISECONDS)
     _ <- ZIO.logInfo(s"insert into rep1_cache_data, duration ${finish - start} ms.")
   } yield ()
+
+  def getReportData2(reportId: Int, reqParams: ReqReport2): ZIO[Any,SQLException,List[Report2Row]] = for {
+    start  <- Clock.currentTime(TimeUnit.MILLISECONDS)
+    rs <- getReport2DataResultSetView(reportId, reqParams)
+
+    lstDataRows = Iterator.continually(rs._1).takeWhile(_.next()).map{r =>
+      val lsErrorData = r.getString("ls_error")
+      val lsError = if (r.wasNull())
+        " " else
+        lsErrorData
+      Report2Row(
+        r.getInt("rn"),
+        r.getInt("nyear"),
+        r.getInt("id_omsu"),
+        r.getString("omsu_name"),
+        r.getInt("id_voc_agent"),
+        r.getString("org_name"),
+        lsError,
+        r.getString("r_1_koef_totcnt_errcnt"),
+        r.getString("r_2_koef_totcnt_errcnt"),
+        r.getString("r_3_koef_totcnt_errcnt"),
+        r.getString("r_4_koef_totcnt_errcnt"),
+        r.getString("r_5_koef_totcnt_errcnt"),
+        r.getString("r_6_koef_totcnt_errcnt"),
+        r.getString("r_7_koef_totcnt_errcnt"),
+        r.getString("r_8_koef_totcnt_errcnt"),
+        r.getString("r_9_koef_totcnt_errcnt"),
+        r.getString("r_10_koef_totcnt_errcnt"),
+        r.getString("r_11_koef_totcnt_errcnt"),
+        r.getString("r_12_koef_totcnt_errcnt"),
+        r.getInt("total")
+      )
+
+    }.toList
+    finish  <- Clock.currentTime(TimeUnit.MILLISECONDS)
+    _ <- ZIO.logInfo(s" >>>>>>>>>>> getReportData2 duration ${finish-start} ms.")
+  } yield lstDataRows
 
   def getReportData1(reportId: Int, reqParams: ReqReport1, isCacheExists: Int,cacheKey: Int, isExport: Int = 0):
   ZIO[Any,SQLException,List[Report1Row]] = for {
