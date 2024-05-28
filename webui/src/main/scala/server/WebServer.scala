@@ -50,6 +50,7 @@ object WebServer {
                 ZIO.logInfo(s" PARSED: page_num  = ${req.url.queryParams.getAll("page_num").toList.map(_.toInt)}") *>
                   ZIO.logInfo(s" PARSED: page_cnt  = ${req.url.queryParams.getAll("page_cnt").toList.map(_.toInt)}") *>
                 ZIO.logInfo(s" PARSED: errlstxt  = ${req.url.queryParams.getAll("errlstxt").toList}") *>
+                  ZIO.logInfo(s" PARSED: errlstxt ? isEmpty = ${req.url.queryParams.getAll("errlstxt").toList.isEmpty}") *>
                 catchCover(
                   Report1.newEmptyMainPageRun(
                     ReqReport1(
@@ -57,6 +58,8 @@ object WebServer {
                       omsu = req.url.queryParams.getAll("omsu").toList.map(_.toInt),
                       org = req.url.queryParams.getAll("org").toList.map(_.toInt),
                       errls   = req.url.queryParams.getAll("errls").head.toInt,
+                      /*if (req.url.queryParams.getAll("errls").head.toInt == -1 && req.url.queryParams.getAll("errlstxt").toList.isEmpty)
+                      0 else req.url.queryParams.getAll("errls").head.toInt*/
                       existpd = req.url.queryParams.getAll("existpd").head.toInt,
                       page_num = req.url.queryParams.getAll("page_num").head.toInt,
                       page_cnt = req.url.queryParams.getAll("page_cnt").head.toInt,

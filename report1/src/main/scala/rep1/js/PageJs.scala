@@ -695,13 +695,22 @@ object PageJs {
       |  var period = parseInt(elms[0])*12 + parseInt(elms[3]) - 1;
       |  const thisLsErrorText = tdCell.dataset.lserrortext;
       |  console.log("click thisLsErrorText = ",thisLsErrorText);
-      |
+      |  console.log("thisLsErrorText.length = ",thisLsErrorText.length);
       |  var selectedErrls = [];
-      |   var errlsOptions = document.getElementById("errls-select").options;
-      |          for (var i = 0; i < errlsOptions.length; i++) {
-      |                  if (errlsOptions[i].selected)
-      |                      selectedErrls.push(errlsOptions[i].value);
-      |              };
+      |
+      |  if (thisLsErrorText.length === 1){
+      |    selectedErrls.push(0);
+      |  } else {
+      |    selectedErrls.push(-1);
+      |  }
+      |
+      |  console.log("selectedErrls[0] = ",selectedErrls[0]);
+      |
+      |   //var errlsOptions = document.getElementById("errls-select").options;
+      |   //       for (var i = 0; i < errlsOptions.length; i++) {
+      |   //               if (errlsOptions[i].selected)
+      |   //                   selectedErrls.push(errlsOptions[i].value);
+      |   //           };
       |
       |  window.open('/report/1?period=' + period + '&omsu='+ elms[1] +'&org='+ elms[2] +'&errls='+ selectedErrls[0] +'&existpd=1&page_num=1&page_cnt=100'+'&errlstxt='+thisLsErrorText);
       |}
